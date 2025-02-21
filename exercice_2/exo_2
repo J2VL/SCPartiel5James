@@ -1,0 +1,80 @@
+class Patient {
+  constructor(
+    whiteBloodCellCount,
+    clinicalProtocol,
+    relapseYear,
+    geneticMarkers
+  ) {
+    this.whiteBloodCellCount = whiteBloodCellCount;
+    this.clinicalProtocol = clinicalProtocol;
+    this.relapseYear = relapseYear;
+    this.geneticMarkers = geneticMarkers;
+  }
+}
+
+class Stock {
+  constructor(availableDoses) {
+    this.availableDoses = availableDoses;
+  }
+
+  canDispense(drug, requiredDoses, isWeekend) {
+    const safetyMargin = isWeekend ? 1.2 : 1.0;
+    return (
+      (this.availableDoses[drug] || 0) >=
+      requiredDoses + Math.floor(3 * safetyMargin)
+    );
+  }
+}
+
+class Prescription {
+  constructor(drugs, prescriptionDate) {
+    this.drugs = drugs;
+    this.prescriptionDate = new Date(prescriptionDate);
+  }
+}
+
+class ValidationRule {
+  isValid(patient, prescription, stock) {
+    throw new Error("Method 'isValid' must be implemented.");
+  }
+}
+
+class Rule801 extends ValidationRule {
+  isValid(patient, prescription) {
+    if (!prescription.drugs.includes("X")) return true;
+    let requiredWBC = patient.clinicalProtocol !== "Gamma" ? 2000 : 1500;
+    if (patient.relapseYear > 2019) requiredWBC = 2000;
+    return patient.whiteBloodCellCount > requiredWBC;
+  }
+}
+
+class Rule327 extends ValidationRule {
+  isValid(patient, prescription) {
+    if (prescription.drugs.includes("Y") && prescription.drugs.includes("Z")) {
+      if (patient.geneticMarkers.includes("BRCA1")) return true;
+      return prescription.prescriptionDate.getDay() === 3; // Mercredi (0 = Dimanche)
+    }
+    return true;
+  }
+}
+
+class Rule666 extends ValidationRule {
+  isValid(_, prescription, stock) {
+    const isWeekend = [6, 0].includes(prescription.prescriptionDate.getDay()); // Samedi & Dimanche
+    return prescription.drugs.every((drug) =>
+      stock.canDispense(drug, 1, isWeekend)
+    );
+  }
+}
+
+class PrescriptionValidator {
+  constructor(rules) {
+    this.rules = rules;
+  }
+
+  validate(patient, prescription, stock) {
+    return this.rules.every((rule) =>
+      rule.isValid(patient, prescription, stock)
+    );
+  }
+}
